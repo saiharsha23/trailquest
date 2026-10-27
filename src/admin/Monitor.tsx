@@ -22,7 +22,7 @@ export default function Monitor(){const [teams,setT]=useState<T[]>([]);const [pr
  const s=ev?.status;const name=(id:string)=>teams.find(t=>t.id===id)?.name??"A team";
  return <div className="grid gap-5 max-w-5xl"><h1 className="font-serif text-3xl">Live Game Monitor</h1><Err msg={err}/>
  <Card><div className="flex gap-3 flex-wrap items-center"><span className="font-bold">Game: {s??"no event"}</span>
- {s==="draft"&&<Btn onClick={()=>set("live")}>Start game</Btn>}{s==="live"&&<Btn kind="secondary" onClick={()=>set("paused")}>Pause</Btn>}{s==="paused"&&<Btn onClick={()=>set("live")}>Resume</Btn>}
+ {(s==="draft"||s==="ended")&&<Btn onClick={()=>set("live",s==="ended"?"Restart the game? Teams can play again.":undefined)}>{s==="ended"?"Restart game":"Start game"}</Btn>}{s==="live"&&<Btn kind="secondary" onClick={()=>set("paused")}>Pause</Btn>}{s==="paused"&&<Btn onClick={()=>set("live")}>Resume</Btn>}
  {(s==="live"||s==="paused")&&<Btn kind="danger" onClick={()=>set("ended","End the game? Teams will no longer be able to play.")}>End game</Btn>}<Btn kind="secondary" onClick={exp}>Export results</Btn>
  <span className="text-xs text-muted ml-auto">Realtime: {live} · updated {upd?upd.toLocaleTimeString():"—"}</span></div></Card>
  <div className="grid sm:grid-cols-2 gap-4">{teams.map(t=>{const p=prog.find(x=>x.team_id===t.id);const n=total[t.id]??0,c=p?.completed_order??0;
