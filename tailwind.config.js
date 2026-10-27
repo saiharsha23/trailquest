@@ -1,0 +1,2 @@
+export default {content:["./index.html","./src/**/*.{ts,tsx}"],theme:{extend:{colors:{ivory:"#F8F2E7",cream:"#F5EBDD",card:"#FCFAF6",ink:"#3F2C23",muted:"#796454",gold:"#F5D9A2",antique:"#B97719",line:"#E9D7B7",ok:"#557A58",bad:"#B85C46"},
+fontFamily:{serif:['"Playfair Display"',"Georgia","serif"],sans:["Lato","Inter","system-ui","sans-serif"]},borderRadius:{card:"28px"},boxShadow:{warm:"0 8px 24px -12px rgba(63,44,35,.18)"}}},plugins:[]}

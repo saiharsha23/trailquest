@@ -1,0 +1,4 @@
+@tailwind base;@tailwind components;@tailwind utilities;
+body{@apply bg-ivory text-ink font-sans antialiased}
+:focus-visible{outline:2px solid #B97719;outline-offset:2px}
+@media print{.no-print{display:none!important}body{background:#fff}.qr-card{break-inside:avoid;page-break-inside:avoid}@page{size:A4;margin:12mm}}

@@ -1,0 +1,17 @@
+import {useEffect,useState} from "react";import {supabase as sb} from "../lib/supabase";import {rank,score,Row} from "../lib/ranking";import {toCsv,download} from "../lib/csv";import {Btn,Card,Err} from "./ui";
+const mins=(a:string|null,b:string|null)=>a&&b?Math.round((+new Date(b)-+new Date(a))/60000)+" min":"—";const tm=(s:string|null)=>s?new Date(s).toLocaleString():"—";
+export default function Results(){const [rows,setRows]=useState<Row[]>([]);const [scoring,setSc]=useState(false);const [err,setErr]=useState("");
+ useEffect(()=>{(async()=>{const [t,p,r,a,h,e]=await Promise.all([sb!.from("teams").select("id,name"),sb!.from("team_progress").select("*"),sb!.from("team_routes").select("team_id"),
+  sb!.from("answer_attempts").select("team_id").eq("correct",false),sb!.from("hint_uses").select("team_id"),sb!.from("events").select("*").limit(1).maybeSingle()]);
+  const bad=t.error??p.error??r.error??a.error??h.error??e.error;if(bad)return setErr(bad.message);const ev:any=e.data;const on=(ev?.points_per_checkpoint??0)>0;setSc(on);
+  setRows((t.data??[]).map((x:any)=>{const q=(p.data??[]).find((y:any)=>y.team_id===x.id);const n=(l:any[])=>l.filter((y:any)=>y.team_id===x.id).length;
+   const completed=q?.completed_order??0,wrong=n(a.data??[]),hints=n(h.data??[]);
+   return {team:x.name,completed,total:n(r.data??[]),started_at:q?.started_at??null,finished_at:q?.finished_at??null,last_activity:q?.last_activity??null,wrong,hints,
+    score:on?score({completed,wrong,hints,finished:!!q?.finished_at},{points:ev.points_per_checkpoint,wrongPenalty:ev.wrong_penalty,hintPenalty:ev.hint_penalty,finishBonus:ev.finish_bonus}):0}}))})()},[]);
+ const ranked=rank(rows,scoring);const status=(r:Row)=>r.finished_at?"Finished":r.completed?"In progress":"Not started";
+ const exp=()=>download("final-results.csv",toCsv([["Rank","Team","Score","Completed","Total","Incorrect attempts","Hints used","Start","Finish","Duration","Status"],...ranked.map((r,i)=>[i+1,r.team,scoring?r.score:"",r.completed,r.total,r.wrong,r.hints,r.started_at,r.finished_at,mins(r.started_at,r.finished_at),status(r)])]));
+ const H=["Rank","Team",...(scoring?["Score"]:[]),"Checkpoints","Incorrect","Hints","Start","Finish","Time","Status"];
+ return <div className="grid gap-5 max-w-5xl"><div className="flex justify-between items-center"><h1 className="font-serif text-3xl">Results and Reports</h1><Btn onClick={exp} disabled={!ranked.length}>Export CSV</Btn></div><Err msg={err}/>
+ <Card><div className="overflow-x-auto"><table className="w-full text-sm text-left"><thead className="text-muted"><tr>{H.map(h=><th key={h} className="py-2 pr-4">{h}</th>)}</tr></thead>
+ <tbody>{ranked.map((r,i)=><tr key={r.team} className="border-t border-line"><td className="py-2 pr-4">{i+1}</td><td className="pr-4 font-bold">{r.team}</td>{scoring&&<td className="pr-4 font-bold">{r.score}</td>}<td className="pr-4">{r.completed}/{r.total}</td><td className="pr-4">{r.wrong}</td><td className="pr-4">{r.hints}</td><td className="pr-4">{tm(r.started_at)}</td><td className="pr-4">{tm(r.finished_at)}</td><td className="pr-4">{mins(r.started_at,r.finished_at)}</td><td>{status(r)}</td></tr>)}</tbody></table></div>
+ <p className="text-xs text-muted mt-4">{scoring?"Ranking: highest score first. Score = checkpoints × points − wrong answers × penalty − hints × penalty + finish bonus (never below 0). Ties: finished first, then faster time.":"Scoring is off. Ranking: finished teams first, fastest first; then checkpoints completed, then earlier last activity."}</p></Card></div>}
