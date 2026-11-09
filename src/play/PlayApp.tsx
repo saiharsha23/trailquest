@@ -5,8 +5,8 @@ import {Btn,Card,Err,Field} from "../admin/ui";
 import Scanner from "./Scanner";
 import LockPad from "./LockPad";
 
-interface Clue{checkpoint:number;title:string;clue:string;hint:string|null;hint_available?:boolean;hint_penalty?:number;image_url?:string|null}
-interface State{team:string;color:string;event:string;status:string;completed:number;total:number;started_at:string|null;finished_at:string|null;clue:Clue|null;victory?:string|null;deadline?:string|null}
+interface Clue{checkpoint:number;title:string;clue:string;hint:string|null;hint_image_url?:string|null;hint_available?:boolean;has_station_hint?:boolean;hint_penalty?:number;hint_lives_left?:number;image_url?:string|null}
+interface State{team:string;color:string;event:string;status:string;completed:number;total:number;started_at:string|null;finished_at:string|null;clue:Clue|null;victory?:string|null;deadline?:string|null;hint_lives_left?:number;hint_lives_total?:number}
 const CHEERS=["Brilliant teamwork! One step closer to the treasure.","Clue cracked! Keep your eyes open and your team spirit high.","Great minds, fast feet — on to the next checkpoint!","Fantastic work! Your teamwork is paying off."];
 const dur=(a:string,b:string)=>{const s=Math.max(0,Math.round((+new Date(b)-+new Date(a))/1000));return `${Math.floor(s/60)} min ${s%60} s`};
 
@@ -95,6 +95,9 @@ export default function PlayApp(){
  const hasLockKeywords=!!st.clue&&/\b(lock|digit|code|pin|vault|number|combination)\b/i.test(st.clue.clue+" "+st.clue.title);
  const showLock=useLock&&(isFinal||hasLockKeywords);
  const defaultDigits=!!st.clue&&/\b3\s*digit/i.test(st.clue.clue)?3:4;
+ const hintLivesLeft = st.clue?.hint_lives_left ?? st.hint_lives_left ?? 2;
+ const hintLivesTotal = st.hint_lives_total ?? 2;
+ const hasRevealedHint = !!(st.clue?.hint || st.clue?.hint_image_url);
 
  return wrap(<>
  <Card><div className="flex items-center gap-3"><span className="h-4 w-4 rounded-full border border-ink" style={{background:st.color}} aria-hidden/><h1 className="font-serif text-2xl">{st.team}</h1></div>
@@ -158,7 +161,59 @@ export default function PlayApp(){
 
    <p className="mt-3 whitespace-pre-line leading-relaxed">{st.clue.clue}</p>
    
-   {st.clue.hint?<p className="mt-3 text-sm bg-cream rounded-2xl p-3"><b>Hint:</b> {st.clue.hint}</p>:st.clue.hint_available&&<button type="button" onClick={hint} className="mt-3 text-sm underline text-muted">Reveal hint{st.clue.hint_penalty?` (−${st.clue.hint_penalty} points)`:""}</button>}
+   {/* Hint Section: Revealed hint (text + image) or 2-lives prompt */}
+   {hasRevealedHint ? (
+    <div className="mt-4 bg-cream/70 rounded-2xl p-4 border border-line">
+     <div className="flex justify-between items-center text-xs font-bold text-antique uppercase tracking-wider mb-2">
+      <span className="flex items-center gap-1.5">
+       <span>💡</span>
+       <span>REVEALED HINT</span>
+      </span>
+      <span className="text-muted tracking-normal font-sans font-normal text-[11px]">
+       {hintLivesLeft}/{hintLivesTotal} lives left
+      </span>
+     </div>
+
+     {st.clue.hint_image_url && (
+      <div className="mb-3 overflow-hidden rounded-xl border border-line bg-card">
+       <img
+        src={st.clue.hint_image_url}
+        alt="Hint clue"
+        onClick={() => setZoomImg(st.clue!.hint_image_url!)}
+        className="max-h-56 w-full object-contain cursor-zoom-in hover:opacity-95 transition-opacity"
+       />
+       <p className="py-1 text-center text-[10px] text-muted tracking-wide">Tap hint image to zoom</p>
+      </div>
+     )}
+
+     {st.clue.hint && <p className="text-sm whitespace-pre-line leading-relaxed text-ink">{st.clue.hint}</p>}
+    </div>
+   ) : (st.clue.hint_available || st.clue.has_station_hint) ? (
+    <div className="mt-4 bg-cream/30 border border-line rounded-2xl p-3 text-sm">
+     <div className="flex items-center justify-between gap-2 flex-wrap">
+      <div className="flex items-center gap-2">
+       <span className="text-base" aria-label={`${hintLivesLeft} hint lives remaining`}>
+        {hintLivesLeft >= 2 ? "❤️❤️" : hintLivesLeft === 1 ? "❤️🤍" : "🤍🤍"}
+       </span>
+       <span className="text-xs text-muted font-medium">
+        {hintLivesLeft > 0 ? `${hintLivesLeft} hint ${hintLivesLeft === 1 ? "life" : "lives"} left` : "No hint lives left"}
+       </span>
+      </div>
+
+      {hintLivesLeft > 0 ? (
+       <button
+        type="button"
+        onClick={hint}
+        className="text-xs font-bold text-antique hover:text-ink underline transition-colors"
+       >
+        Reveal hint (−1 life){st.clue.hint_penalty ? ` (−${st.clue.hint_penalty} pts)` : ""}
+       </button>
+      ) : (
+       <span className="text-xs text-muted italic">2/2 hint lives used</span>
+      )}
+     </div>
+    </div>
+   ) : null}
    
    <div className="mt-5">
     {showLock?

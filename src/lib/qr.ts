@@ -12,6 +12,7 @@ const MESSAGES: Record<string, string> = {
   invalid_code: "That team code wasn't recognised. Check it with your organiser.",
   time_up: "Time is up for your team. Please see the organiser.",
   hints_off: "Hints are switched off for this game.",
+  no_hint_lives_left: "All 2 hint lives have been used! No more hints can be revealed for your team.",
   not_signed_in: "Please reload the page and try again.",
   not_a_team_member: "Join your team first.",
 };
