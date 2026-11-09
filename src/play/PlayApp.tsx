@@ -5,7 +5,7 @@ import {Btn,Card,Err,Field} from "../admin/ui";
 import Scanner from "./Scanner";
 import LockPad from "./LockPad";
 
-interface Clue{checkpoint:number;title:string;clue:string;hint:string|null;hint_available?:boolean;hint_penalty?:number}
+interface Clue{checkpoint:number;title:string;clue:string;hint:string|null;hint_available?:boolean;hint_penalty?:number;image_url?:string|null}
 interface State{team:string;color:string;event:string;status:string;completed:number;total:number;started_at:string|null;finished_at:string|null;clue:Clue|null;victory?:string|null;deadline?:string|null}
 const CHEERS=["Brilliant teamwork! One step closer to the treasure.","Clue cracked! Keep your eyes open and your team spirit high.","Great minds, fast feet — on to the next checkpoint!","Fantastic work! Your teamwork is paying off."];
 const dur=(a:string,b:string)=>{const s=Math.max(0,Math.round((+new Date(b)-+new Date(a))/1000));return `${Math.floor(s/60)} min ${s%60} s`};
@@ -29,6 +29,7 @@ export default function PlayApp(){
  const [useLock,setUseLock]=useState(true);
  const [finalDesc,setFinalDesc]=useState<string>(()=>sessionStorage.getItem("tq_final_desc")??"");
  const [finalQuote,setFinalQuote]=useState<string>(()=>sessionStorage.getItem("tq_final_quote")??"");
+ const [zoomImg,setZoomImg]=useState<string|null>(null);
 
  const load=useCallback(async()=>{
   const s=await sb!.auth.getSession();
@@ -40,7 +41,7 @@ export default function PlayApp(){
  useEffect(()=>{const t=new URLSearchParams(location.search).get("t");if(t){sessionStorage.setItem("tq_t",t);history.replaceState(null,"","/play")}},[]);
  useEffect(()=>{if(configured)load()},[load]);
  useEffect(()=>{const t=sessionStorage.getItem("tq_t");if(t&&st){sessionStorage.removeItem("tq_t");onToken(t)}},[st]);
- useEffect(()=>{if(!configured)return;const i=setInterval(load,15000);return()=>clearInterval(i)},[load]); // picks up pause/end
+ useEffect(()=>{if(!configured)return;const i=setInterval(load,15000);return()=>clearInterval(i)},[load]);
 
  const onToken=async(t:string)=>{
   setScan(false);setErr("");setMsg("");
@@ -141,6 +142,20 @@ export default function PlayApp(){
     {isFinal&&<span className="text-xs bg-gold/50 text-antique px-2 py-0.5 rounded-full font-bold">Final Destination</span>}
    </div>
    <h2 className="font-serif text-2xl mt-2">{st.clue.title}</h2>
+
+   {/* Clue Description Image with tap-to-zoom */}
+   {st.clue.image_url&&(
+    <div className="mt-3 overflow-hidden rounded-2xl border border-line bg-cream/40">
+     <img
+      src={st.clue.image_url}
+      alt={st.clue.title}
+      onClick={()=>setZoomImg(st.clue!.image_url!)}
+      className="max-h-64 w-full object-contain cursor-zoom-in hover:opacity-95 transition-opacity"
+     />
+     <p className="py-1 text-center text-[11px] text-muted tracking-wide">Tap image to zoom</p>
+    </div>
+   )}
+
    <p className="mt-3 whitespace-pre-line leading-relaxed">{st.clue.clue}</p>
    
    {st.clue.hint?<p className="mt-3 text-sm bg-cream rounded-2xl p-3"><b>Hint:</b> {st.clue.hint}</p>:st.clue.hint_available&&<button type="button" onClick={hint} className="mt-3 text-sm underline text-muted">Reveal hint{st.clue.hint_penalty?` (−${st.clue.hint_penalty} points)`:""}</button>}
@@ -174,4 +189,23 @@ export default function PlayApp(){
   <button disabled={st.status!=="live"} onClick={()=>{setErr("");setScan(true)}} className="w-full py-6 rounded-3xl bg-gold font-serif text-2xl disabled:opacity-50">Scan QR</button>
   {st.status!=="live"&&<p className="text-sm text-muted mt-3">Scanning opens when the organiser starts the game.</p>}</Card>}
  </>}
+
+ {/* Full-screen image zoom modal */}
+ {zoomImg&&(
+  <div
+   className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-4 cursor-zoom-out"
+   onClick={()=>setZoomImg(null)}
+  >
+   <div className="relative max-h-full max-w-full">
+    <img src={zoomImg} alt="Clue enlarged" className="max-h-[85vh] max-w-[95vw] rounded-2xl object-contain shadow-2xl" />
+    <button
+     type="button"
+     onClick={()=>setZoomImg(null)}
+     className="absolute -top-3 -right-3 rounded-full bg-ivory px-3 py-1 font-sans text-xs font-bold text-ink shadow-lg hover:bg-cream"
+    >
+     ✕ Close
+    </button>
+   </div>
+  </div>
+ )}
  </>)}
